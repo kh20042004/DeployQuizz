@@ -1,0 +1,18 @@
+# Spring Boot Configuration
+spring.application.name=QuizApp
+server.port=${PORT:8080}
+
+# Logging
+logging.level.root=INFO
+logging.level.com.quiz=DEBUG
+
+# MongoDB Configuration (MongoDB Atlas)
+# IMPORTANT: DO NOT commit your actual credentials to Git!
+# Copy this file to application.properties and fill in your values
+spring.data.mongodb.database=quizdb
+spring.data.mongodb.uri=${MONGODB_URI:mongodb+srv://YOUR_USERNAME:YOUR_PASSWORD@YOUR_CLUSTER.mongodb.net/quizdb?appName=YourApp}
+
+# Server Configuration
+server.error.include-message=always
+server.error.include-stacktrace=on_param
+server.compression.enabled=true

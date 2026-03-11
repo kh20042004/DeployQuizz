@@ -1,0 +1,43 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+.flattened-pom.xml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Agent logs
+.github/java-upgrade/
+
+# Build
+bin/
+out/
+
+# Logs
+*.log
+logs/
+
+# Spring Boot
+application.properties
+application-dev.properties
+application-local.properties
+
+# Node (if using webpack)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Environment variables
+.env
+.env.local
