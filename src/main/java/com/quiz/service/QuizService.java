@@ -36,8 +36,18 @@ public class QuizService {
         int correctAnswers = 0;
         List<QuestionResult> results = new ArrayList<>();
 
+        // Fetch all questions in a single query instead of N separate queries
+        List<String> ids = new ArrayList<>();
+        for (QuizSubmission s : submissions) {
+            ids.add(String.valueOf(s.getQuestionId()));
+        }
+        Map<String, Question> questionMap = new HashMap<>();
+        for (Question q : questionRepository.findAllById(ids)) {
+            questionMap.put(q.getId(), q);
+        }
+
         for (QuizSubmission submission : submissions) {
-            Question question = getQuestionById(submission.getQuestionId());
+            Question question = questionMap.get(String.valueOf(submission.getQuestionId()));
             
             if (question != null) {
                 boolean isCorrect = question.getCorrectAnswer()

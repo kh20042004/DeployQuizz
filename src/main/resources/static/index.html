@@ -163,7 +163,10 @@
             `;
             
             try {
-                const response = await fetch(`${API_BASE}/questions`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                const response = await fetch(`${API_BASE}/questions`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (!response.ok) {
                     showSampleQuestions();
                     return;
@@ -178,20 +181,30 @@
             }
         }
 
-        async function loadStats() {
+        async function loadStats(retryCount = 0) {
             try {
-                const response = await fetch(`${API_BASE}/stats`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+                const response = await fetch(`${API_BASE}/stats`, { signal: controller.signal });
+                clearTimeout(timeoutId);
                 if (response.ok) {
                     const stats = await response.json();
                     document.getElementById('participantCount').textContent = stats.totalParticipants;
                     document.getElementById('totalQuestionsStats').textContent = stats.totalQuestions;
                     document.getElementById('averageScore').textContent = stats.averageScore.toFixed(1) + '%';
+                } else {
+                    throw new Error('HTTP ' + response.status);
                 }
             } catch (error) {
-                console.log('Không thể tải thống kê');
-                document.getElementById('participantCount').textContent = '0';
-                document.getElementById('totalQuestionsStats').textContent = '0';
-                document.getElementById('averageScore').textContent = '0%';
+                if (retryCount < 3) {
+                    // Retry after 5s (MongoDB Atlas cold start on Railway)
+                    setTimeout(() => loadStats(retryCount + 1), 5000);
+                } else {
+                    console.log('Không thể tải thống kê');
+                    document.getElementById('participantCount').textContent = '0';
+                    document.getElementById('totalQuestionsStats').textContent = '0';
+                    document.getElementById('averageScore').textContent = '0%';
+                }
             }
         }
 
