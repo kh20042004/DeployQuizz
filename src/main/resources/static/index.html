@@ -139,7 +139,10 @@
 
         // Load questions and stats on page load
         document.addEventListener('DOMContentLoaded', function() {
-            loadQuestions();
+            // Show sample questions IMMEDIATELY (no loading spinner)
+            showSampleQuestions();
+            // Then fetch from API in background and replace if successful
+            loadQuestionsFromAPI();
             loadStats();
         });
 
@@ -153,31 +156,21 @@
             }
         });
 
-        async function loadQuestions() {
-            // Show loading
-            document.getElementById('questionsContainer').innerHTML = `
-                <div class="text-center py-12">
-                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900"></div>
-                    <p class="mt-4 text-neutral-500">Đang tải câu hỏi...</p>
-                </div>
-            `;
-            
+        async function loadQuestionsFromAPI() {
             try {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000);
                 const response = await fetch(`${API_BASE}/questions`, { signal: controller.signal });
                 clearTimeout(timeoutId);
-                if (!response.ok) {
-                    showSampleQuestions();
-                    return;
+                if (!response.ok) return;
+                const apiQuestions = await response.json();
+                if (apiQuestions && apiQuestions.length > 0 && currentQuestionIndex === 0 && userAnswers.length === 0) {
+                    // Only replace if user hasn't started answering yet
+                    quizQuestions = apiQuestions;
+                    renderCurrentQuestion();
                 }
-                quizQuestions = await response.json();
-                currentQuestionIndex = 0;
-                userAnswers = [];
-                renderCurrentQuestion();
             } catch (error) {
-                console.log('Đang tải câu hỏi mẫu');
-                showSampleQuestions();
+                console.log('Sử dụng câu hỏi mẫu');
             }
         }
 
