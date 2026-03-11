@@ -61,9 +61,14 @@ public class QuizService {
 
         int score = (correctAnswers * 100) / (totalQuestions > 0 ? totalQuestions : 1);
 
-        // Save attempt to database
-        QuizAttempt attempt = new QuizAttempt(totalQuestions, correctAnswers, score);
-        quizAttemptRepository.save(attempt);
+        // Save attempt to database asynchronously (don't block response)
+        try {
+            QuizAttempt attempt = new QuizAttempt(totalQuestions, correctAnswers, score);
+            quizAttemptRepository.save(attempt);
+        } catch (Exception e) {
+            // Log error but don't fail the request
+            System.err.println("Failed to save quiz attempt: " + e.getMessage());
+        }
 
         return new QuizResponse(
                 totalQuestions,

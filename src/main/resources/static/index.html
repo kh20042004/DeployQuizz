@@ -340,12 +340,31 @@
         }
 
         async function submitAllAnswers() {
+            // Show loading overlay
+            document.getElementById('questionsContainer').innerHTML = `
+                <div class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900"></div>
+                    <p class="mt-4 text-neutral-500">Đang nộp bài và tính điểm...</p>
+                </div>
+            `;
+            
             try {
+                // Add timeout to fetch (30 seconds)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
+                
                 const response = await fetch(`${API_BASE}/submit`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(userAnswers)
+                    body: JSON.stringify(userAnswers),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
 
                 const result = await response.json();
                 displayResults(result);
@@ -354,7 +373,18 @@
                 loadStats();
             } catch (error) {
                 console.error('Lỗi:', error);
-                alert('Lỗi khi nộp bài');
+                
+                // Show error message
+                document.getElementById('questionsContainer').innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="text-red-600 text-5xl mb-4">⚠️</div>
+                        <h3 class="text-lg font-medium text-neutral-900 mb-2">Lỗi khi nộp bài</h3>
+                        <p class="text-neutral-500 mb-6">${error.name === 'AbortError' ? 'Quá thời gian chờ. Vui lòng thử lại.' : 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'}</p>
+                        <button onclick="location.reload()" class="inline-flex items-center justify-center rounded-xl bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-neutral-800">
+                            Tải lại trang
+                        </button>
+                    </div>
+                `;
             }
         }
 
