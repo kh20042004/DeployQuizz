@@ -136,6 +136,7 @@
         let currentQuestionIndex = 0;
         let userAnswers = [];
         let hasAnswered = false;
+        let questionsFromAPI = false;
 
         // Load questions and stats on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -167,6 +168,7 @@
                 if (apiQuestions && apiQuestions.length > 0 && currentQuestionIndex === 0 && userAnswers.length === 0) {
                     // Only replace if user hasn't started answering yet
                     quizQuestions = apiQuestions;
+                    questionsFromAPI = true;
                     renderCurrentQuestion();
                 }
             } catch (error) {
@@ -346,7 +348,40 @@
         }
 
         async function submitAllAnswers() {
-            // Show loading overlay
+            if (questionsFromAPI) {
+                // Questions from API → submit to server
+                await submitToServer();
+            } else {
+                // Sample questions → calculate results client-side
+                calculateResultsLocally();
+            }
+        }
+
+        function calculateResultsLocally() {
+            let correctAnswers = 0;
+            const results = [];
+            for (const answer of userAnswers) {
+                const question = quizQuestions.find(q => q.id == answer.questionId);
+                if (question) {
+                    const isCorrect = answer.userAnswer === question.correctAnswer;
+                    if (isCorrect) correctAnswers++;
+                    results.push({
+                        questionText: question.questionText,
+                        userAnswer: answer.userAnswer,
+                        correctAnswer: question.correctAnswer,
+                        isCorrect: isCorrect
+                    });
+                }
+            }
+            displayResults({
+                totalQuestions: quizQuestions.length,
+                correctAnswers: correctAnswers,
+                score: Math.round((correctAnswers * 100) / quizQuestions.length),
+                results: results
+            });
+        }
+
+        async function submitToServer() {
             document.getElementById('questionsContainer').innerHTML = `
                 <div class="text-center py-12">
                     <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-neutral-900"></div>
@@ -355,7 +390,6 @@
             `;
             
             try {
-                // Add timeout to fetch (30 seconds)
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 30000);
                 
@@ -374,23 +408,11 @@
 
                 const result = await response.json();
                 displayResults(result);
-                
-                // Reload stats after submission to update participant count
                 loadStats();
             } catch (error) {
                 console.error('Lỗi:', error);
-                
-                // Show error message
-                document.getElementById('questionsContainer').innerHTML = `
-                    <div class="text-center py-12">
-                        <div class="text-red-600 text-5xl mb-4">⚠️</div>
-                        <h3 class="text-lg font-medium text-neutral-900 mb-2">Lỗi khi nộp bài</h3>
-                        <p class="text-neutral-500 mb-6">${error.name === 'AbortError' ? 'Quá thời gian chờ. Vui lòng thử lại.' : 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.'}</p>
-                        <button onclick="location.reload()" class="inline-flex items-center justify-center rounded-xl bg-neutral-900 px-6 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-neutral-800">
-                            Tải lại trang
-                        </button>
-                    </div>
-                `;
+                // Fallback: calculate locally if server fails
+                calculateResultsLocally();
             }
         }
 
